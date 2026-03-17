@@ -10,7 +10,7 @@ AgentTrace (per-call observability records).
 from __future__ import annotations
 
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator
@@ -104,7 +104,7 @@ class ValidatedLead(BaseModel):
     # Intake Agent additions
     is_incomplete: bool
     validation_notes: list[str]
-    validated_at: datetime = Field(default_factory=datetime.utcnow)
+    validated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     @field_validator("deal_value_usd")
     @classmethod
@@ -146,13 +146,13 @@ class ClassifiedLead(BaseModel):
     notes: str = ""
     is_incomplete: bool
     validation_notes: list[str]
-    validated_at: datetime = Field(default_factory=datetime.utcnow)
+    validated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     # Classification Agent additions
     priority_score: int
     category: LeadCategory
     score_reasoning: str
-    classified_at: datetime = Field(default_factory=datetime.utcnow)
+    classified_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     @field_validator("deal_value_usd")
     @classmethod
@@ -215,7 +215,7 @@ class ActionPlan(BaseModel):
     # Action Agent additions
     next_actions: list[NextAction]
     follow_up_template: str
-    planned_at: datetime = Field(default_factory=datetime.utcnow)
+    planned_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     @field_validator("next_actions")
     @classmethod
@@ -256,7 +256,7 @@ class WorkflowReport(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     report_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    generated_at: datetime = Field(default_factory=datetime.utcnow)
+    generated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     top_priority_leads: list[ActionPlan]
     all_action_plans: list[ActionPlan]
     health_summary: PipelineHealthSummary
@@ -291,7 +291,7 @@ class WorkflowState(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     workflow_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    started_at: datetime = Field(default_factory=datetime.utcnow)
+    started_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     raw_leads: list[RawLead]
     validated_leads: list[ValidatedLead] = []
     classified_leads: list[ClassifiedLead] = []

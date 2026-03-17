@@ -1,3 +1,13 @@
+## [2026-03-16] — Classification Agent (stage 2 of pipeline)
+
+### Added
+- `app/agents/classification.py` — full implementation of the Classification Agent: `_compute_pre_score` (deterministic 0–100 rule-based score from deal stage, deal value, recency, and stage-velocity penalty), `_determine_category` (rule-based `LeadCategory` fallback), `_build_classification_prompt` (LiteLLM messages builder with retry context injection), `_call_llm_for_classification` (LiteLLM call with markdown-fence stripping), `_classify_single_lead` (retry loop + deterministic fallback), `run_classification_agent` (main entry point with AgentTrace), and a `__main__` Rich table smoke test
+
+### Decisions
+- **Broad `except Exception` in the retry loop** — the spec listed specific exception types (`ValidationError`, `KeyError`, `ValueError`, `JSONDecodeError`), but LiteLLM raises its own types (`AuthenticationError`, `APIConnectionError`, etc.) that are none of those. A narrow catch let LLM failures escape the retry loop and bypass the fallback entirely, losing the lead. Catching `Exception` keeps all failure modes inside the retry/fallback cycle, which is the required contract.
+- **Deterministic fallback is always safe** — `_classify_single_lead` never raises; after `MAX_RETRIES` exhausted it falls back to `_compute_pre_score` + `_determine_category`, ensuring the downstream Action Agent always receives a `ClassifiedLead` regardless of LLM availability.
+- **Pre-score as LLM anchor** — the rule-based score is included in the prompt as a "starting reference" so the LLM output stays grounded; on retry the previous error is appended to the prompt to steer correction without a full context reset.
+
 ## [2026-03-16] — Intake Agent (stage 1 of pipeline)
 
 ### Added
