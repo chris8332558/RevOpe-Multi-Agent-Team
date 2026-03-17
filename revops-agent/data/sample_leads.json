@@ -1,0 +1,68 @@
+[
+  {
+    "id": "lead_001",
+    "company": "Meridian Analytics",
+    "contact_name": "Sarah Okonkwo",
+    "contact_email": "sokonkwo@meridiananalytics.com",
+    "deal_value_usd": 128000,
+    "deal_stage": "negotiation",
+    "last_activity_date": "2026-03-13",
+    "days_in_current_stage": 12,
+    "notes": "Legal has reviewed the MSA; procurement sign-off expected by end of week."
+  },
+  {
+    "id": "lead_002",
+    "company": "Stackwell Inc",
+    "contact_name": "Derek Fontaine",
+    "contact_email": "d.fontaine@stackwell.io",
+    "deal_value_usd": 97500,
+    "deal_stage": "proposal",
+    "last_activity_date": "2026-02-09",
+    "days_in_current_stage": 35,
+    "notes": "Proposal sent 35 days ago with no response; champion may have gone dark."
+  },
+  {
+    "id": "lead_003",
+    "company": "Luminary Health Systems",
+    "contact_name": "Priya Nambiar",
+    "contact_email": "pnambiar@luminaryhealth.org",
+    "deal_value_usd": 45000,
+    "deal_stage": "qualification",
+    "last_activity_date": "2026-03-04",
+    "days_in_current_stage": 18,
+    "notes": "Discovery call went well; evaluating two competing vendors alongside us."
+  },
+  {
+    "id": "lead_004",
+    "company": "Crestview Capital Partners",
+    "contact_name": "Marcus Delgado",
+    "contact_email": "m.delgado@crestviewcp.com",
+    "deal_value_usd": 38500,
+    "deal_stage": "proposal",
+    "last_activity_date": "2026-03-06",
+    "days_in_current_stage": 10,
+    "notes": "Requested a revised proposal with volume discount; strong buying signals."
+  },
+  {
+    "id": "lead_005",
+    "company": "Halcyon Retail Group",
+    "contact_name": "Tina Bergstrom",
+    "contact_email": "tbergstrom@halcyonretail.com",
+    "deal_value_usd": 8200,
+    "deal_stage": "prospecting",
+    "last_activity_date": "2026-01-10",
+    "days_in_current_stage": 65,
+    "notes": "Initial outreach was met with mild interest but no follow-up engagement since January."
+  },
+  {
+    "id": "lead_006",
+    "company": "Vantage Point Solutions",
+    "contact_name": "Jordan Rhee",
+    "contact_email": "jrhee@vantagepointsol.com",
+    "deal_value_usd": 52000,
+    "deal_stage": "qualification",
+    "last_activity_date": null,
+    "days_in_current_stage": 7,
+    "notes": "Imported from legacy CRM migration; last activity date missing from source record."
+  }
+]
