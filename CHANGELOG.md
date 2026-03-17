@@ -1,3 +1,13 @@
+## [2026-03-16] — Review Agent (stage 4 of pipeline — final output)
+
+### Added
+- `app/agents/review.py` — full implementation of the Review Agent: `_compute_health_summary` (deterministic `PipelineHealthSummary` from counts and deal values, health score formula: base 50 ± hot/at-risk/cold ratios), `_call_llm` (shared LiteLLM helper for both calls, returns raw string), `_build_review_notes_prompt` / `_build_markdown_prompt` (separate prompts for QA notes vs. dashboard), `_get_review_notes` (retry loop + string fallback), `_get_markdown_report` (single attempt + minimal template fallback), `run_review_agent` (main entry point assembling `WorkflowReport`), and a `__main__` Rich Markdown smoke test
+
+### Decisions
+- **Two separate LLM calls** — review_notes and markdown_report have fundamentally different output contracts (JSON vs. free-text markdown) so splitting them gives cleaner retry logic: notes use JSON parsing + retry loop; markdown uses a single attempt with a pre-built fallback template, since markdown failures are less structured and not worth retrying.
+- **`top_priority_leads` sorted in Python, not LLM** — deterministic sort by `priority_score` descending guarantees the ordering contract regardless of LLM behaviour; LLM is only responsible for narrative content.
+- **`_compute_health_summary` proxies `incomplete_count`** via `"incomplete" in score_reasoning.lower()` because `ActionPlan` does not carry `is_incomplete` — the Classification Agent embeds "incomplete" in the fallback `score_reasoning` when the lead has no `last_activity_date`.
+
 ## [2026-03-16] — Action Agent (stage 3 of pipeline)
 
 ### Added
