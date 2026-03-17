@@ -1,3 +1,15 @@
+## [2026-03-17] — Demo entry points (CLI + Agent OS UI)
+
+### Added
+- `demo/run_demo.py` — CLI demo: loads `data/sample_leads.json`, runs the full pipeline via `run_revops_pipeline()`, reads the latest JSON log from `outputs/`, and renders a Rich observability table (per-agent status, latency, tokens, retries, errors) plus pipeline health score summary
+- `playground.py` — Agno Agent OS UI entry point using `AgentOS` (agno 2.5.9): registers the RevOps workflow, exposes a FastAPI app on port 8000 for the Agent OS UI at `os.agno.com`, uses `SqliteDb` for session persistence
+- Added `sqlalchemy` and `aiosqlite` dependencies (required by `agno.db.sqlite.SqliteDb`)
+
+### Decisions
+- **`AgentOS` over deprecated `Playground`** — `agno.playground.Playground` was removed in agno v2; the replacement is `agno.os.AgentOS` which registers workflows and exposes a FastAPI app via `agent_os.get_app()`.
+- **Observability table reads from saved JSON log, not in-memory objects** — proves the structured log is correct and independently readable; the demo acts as an integration test for the `_save_log()` output.
+- **Module execution (`python -m demo.run_demo`)** — avoids `sys.path` manipulation; the script relies on the project root being on `sys.path` via `uv run`.
+
 ## [2026-03-16] — RevOps Workflow (stage 5 — agno Step-based orchestration)
 
 ### Added
