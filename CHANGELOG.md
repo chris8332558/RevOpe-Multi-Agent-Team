@@ -1,3 +1,14 @@
+## [2026-03-16] — RevOps Workflow (stage 5 — agno Step-based orchestration)
+
+### Added
+- `app/workflows/revops_workflow.py` — full Step-based Workflow implementation compatible with agno 2.5.9: `_get_sd()`/`_set_sd()` session-data helpers, `_is_parseable()` pre-validation guard, `_save_log()` JSON log writer, `_get_or_init_state()`/`_save_state()` WorkflowState serialisation helpers, four step executor functions (`intake_step_fn`, `classification_step_fn`, `action_step_fn`, `review_step_fn`), `create_revops_workflow()` factory, and `run_revops_pipeline()` convenience function
+
+### Decisions
+- **Step-based API over subclassing** — agno 2.5.9 exposes `Workflow(steps=[Step(name=..., executor=fn)])` composition rather than a subclass-and-override pattern; the implementation matches the installed API exactly.
+- **`_get_sd()` / `_set_sd()` helpers** — in agno 2.5.9, `StepInput` has no top-level `session_state` attribute; shared state lives at `step_input.workflow_session.session_data` (a `Dict[str, Any] | None`). These helpers centralise access and fall back to `step_input.additional_data` when `workflow_session` is None (e.g. in unit tests), so step functions remain readable.
+- **WorkflowState serialised as JSON between steps** — `model_dump(mode="json")` / `model_validate()` round-trip ensures the Pydantic object survives the dict boundary imposed by `session_data`.
+- **`# type: ignore[attr-defined]` on Step import** — `agno.workflow.step` exports `Step`, `StepInput`, `StepOutput` but mypy/pyright cannot resolve them at static analysis time; the ignore suppresses the false-positive without affecting runtime behaviour.
+
 ## [2026-03-16] — Review Agent (stage 4 of pipeline — final output)
 
 ### Added
