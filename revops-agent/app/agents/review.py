@@ -168,25 +168,20 @@ def _build_markdown_prompt(
         "Return ONLY the markdown text, no JSON wrapping."
     )
 
-    top_plans_text = "\n".join(
-        f"  Company: {p.company}\n"
-        f"  Score: {p.priority_score} | Category: {p.category.value}\n"
-        f"  Actions: " + "; ".join(
-            f"{a.description} (due {a.due_in_days}d, {a.owner_role})"
+    def _plan_text(p: ActionPlan) -> str:
+        actions = "; ".join(
+            # Replace | with a dash so the LLM doesn't break markdown table cells
+            f"{a.description.replace('|', '-')} (due {a.due_in_days}d, {a.owner_role})"
             for a in p.next_actions
         )
-        for p in top_plans
-    )
+        return (
+            f"  Company: {p.company}\n"
+            f"  Score: {p.priority_score} | Category: {p.category.value}\n"
+            f"  Actions: {actions}"
+        )
 
-    all_plans_text = "\n".join(
-        f"  Company: {p.company}\n"
-        f"  Score: {p.priority_score} | Category: {p.category.value}\n"
-        f"  Actions: " + "; ".join(
-            f"{a.description} (due {a.due_in_days}d, {a.owner_role})"
-            for a in p.next_actions
-        )
-        for p in plans
-    )
+    top_plans_text = "\n".join(_plan_text(p) for p in top_plans)
+    all_plans_text = "\n".join(_plan_text(p) for p in plans)
 
     user_msg = (
         f"Generated at: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}\n\n"
@@ -259,34 +254,87 @@ def _get_markdown_report(
 ) -> tuple[str, int | None]:
     """
     Returns (markdown_string, tokens_used).
-    Single attempt only — markdown generation rarely fails validation.
-    Falls back to a minimal template if LLM call fails.
+    Built deterministically in Python — LLM is unreliable at populating
+    markdown tables with structured data. The review_notes narrative
+    (already LLM-generated) is embedded directly.
     """
-    try:
-        messages = _build_markdown_prompt(plans, summary, review_notes, top_plans)
-        content, tokens = _call_llm(messages, max_tokens=1024)
-        if not content:
-            raise ValueError("Empty markdown response")
-        return content, tokens
-    except Exception as e:
-        fallback = f"""# RevOps Pipeline Dashboard
+    ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
-Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}
-Pipeline Health Score: {summary.pipeline_health_score}/100
+    # ── Pipeline Summary table ─────────────────────────────────────────────
+    summary_table = (
+        "| Metric | Value |\n"
+        "|--------|-------|\n"
+        f"| Total leads | {summary.total_leads} |\n"
+        f"| Hot | {summary.hot_count} |\n"
+        f"| Warm | {summary.warm_count} |\n"
+        f"| Cold | {summary.cold_count} |\n"
+        f"| At-risk | {summary.at_risk_count} |\n"
+        f"| Incomplete | {summary.incomplete_count} |\n"
+        f"| Total pipeline value | ${summary.total_pipeline_value_usd:,.0f} |\n"
+        f"| At-risk pipeline value | ${summary.at_risk_pipeline_value_usd:,.0f} |"
+    )
 
-## Pipeline Summary
-- Total leads: {summary.total_leads}
-- Hot: {summary.hot_count} | Warm: {summary.warm_count}
-- Cold: {summary.cold_count} | At-risk: {summary.at_risk_count}
-- Total pipeline value: ${summary.total_pipeline_value_usd:,.0f}
+    # ── Top Priority Leads table ───────────────────────────────────────────
+    top_rows = "\n".join(
+        f"| {p.company} | {p.priority_score} | {p.category.value} "
+        f"| {p.next_actions[0].description} (due {p.next_actions[0].due_in_days}d, {p.next_actions[0].owner_role}) |"
+        for p in top_plans
+    )
+    top_table = (
+        "| Company | Score | Category | Top Next Action |\n"
+        "|---------|-------|----------|-----------------|\n"
+        + top_rows
+    )
 
-## QA Review Notes
-{review_notes}
+    # ── All Action Plans ───────────────────────────────────────────────────
+    all_plans_md = ""
+    for p in plans:
+        # Actions table: one row per action
+        action_rows = "\n".join(
+            f"| {a.priority.value.upper()} | {a.due_in_days}d | {a.owner_role} | {a.description} | "
+            for a in p.next_actions
+        )
+        actions_table = (
+            "| Priority | Due | Owner | Action |\n"
+            "|----------|--------|-----|-------|\n"
+            + action_rows
+        )
 
-## Note
-Full markdown report unavailable: {e}
-"""
-        return fallback, None
+        # Build follow-up table — split on " | Opening:" to avoid pipe in cells
+        parts = p.follow_up_template.split(" | Opening:", 1)
+        subject = parts[0].replace("Subject:", "").strip()
+        opening = parts[1].strip() if len(parts) > 1 else ""
+        followup_table = (
+            "| Field | Content |\n"
+            "|-------|---------|\n"
+            f"| Subject | {subject} |\n"
+            f"| Opening | {opening} |"
+        )
+
+        all_plans_md += (
+            f"\n### {p.company}\n\n"
+            f"**Score:** {p.priority_score} &nbsp; **Category:** {p.category.value} &nbsp; "
+            f"**Stage:** {p.deal_stage.value} &nbsp; **Value:** ${p.deal_value_usd:,.0f}\n\n"
+            f"{actions_table}\n\n"
+            f"**Follow-up template:**\n\n"
+            f"{followup_table}\n"
+        )
+
+    report = (
+        f"# RevOps Pipeline Dashboard\n\n"
+        f"Generated: {ts}  \n"
+        f"Pipeline Health Score: **{summary.pipeline_health_score}/100**\n\n"
+        f"## Pipeline Summary\n\n"
+        f"{summary_table}\n\n"
+        f"## Top Priority Leads\n\n"
+        f"{top_table}\n\n"
+        f"## QA Review Notes\n\n"
+        f"{review_notes}\n\n"
+        f"## All Action Plans\n"
+        f"{all_plans_md}"
+    )
+
+    return report, None
 
 
 def run_review_agent(
@@ -346,6 +394,7 @@ if __name__ == "__main__":
     from pathlib import Path
     from rich.console import Console
     from rich.markdown import Markdown
+    from rich.panel import Panel
     from rich.rule import Rule
     from app.agents.intake import run_intake_agent, load_leads_from_file
     from app.agents.classification import run_classification_agent
@@ -360,23 +409,8 @@ if __name__ == "__main__":
     plans, _      = run_action_agent(classified)
     report, trace = run_review_agent(plans)
 
-    console.print(Rule("[bold]Pipeline Health Summary[/bold]"))
-    h = report.health_summary
-    console.print(
-        f"Health Score: [bold green]{h.pipeline_health_score}/100[/bold green] | "
-        f"Hot: {h.hot_count} | Warm: {h.warm_count} | "
-        f"Cold: {h.cold_count} | At-risk: {h.at_risk_count}"
-    )
-    console.print(
-        f"Pipeline Value: ${h.total_pipeline_value_usd:,.0f} | "
-        f"At-risk Value: ${h.at_risk_pipeline_value_usd:,.0f}"
-    )
-
-    console.print(Rule("[bold]QA Review Notes[/bold]"))
-    console.print(report.review_notes)
-
-    console.print(Rule("[bold]Markdown Report Preview[/bold]"))
-    console.print(Markdown(report.markdown_report))
+    console.print(Rule("[bold]Markdown Report[/bold]"))
+    console.print(Panel(Markdown(report.markdown_report), expand=False))
 
     console.print(Rule("[bold]Trace[/bold]"))
     console.print(

@@ -106,6 +106,31 @@ def _save_log(state: WorkflowState) -> Path:
             }
             for t in state.traces
         ],
+        "action_plans": [
+            {
+                "lead_id": p.lead_id,
+                "company": p.company,
+                "contact_name": p.contact_name,
+                "contact_email": p.contact_email,
+                "deal_value_usd": p.deal_value_usd,
+                "deal_stage": p.deal_stage.value,
+                "priority_score": p.priority_score,
+                "category": p.category.value,
+                "score_reasoning": p.score_reasoning,
+                "next_actions": [
+                    {
+                        "description": a.description,
+                        "owner_role": a.owner_role,
+                        "due_in_days": a.due_in_days,
+                        "priority": a.priority.value,
+                    }
+                    for a in p.next_actions
+                ],
+                "follow_up_template": p.follow_up_template,
+                "planned_at": p.planned_at.isoformat(),
+            }
+            for p in state.action_plans
+        ],
         "health_summary": (
             state.report.health_summary.model_dump()
             if state.report else None

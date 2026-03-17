@@ -1,3 +1,14 @@
+## [2026-03-17] — Markdown report improvements + action_plans in log
+
+### Changed
+- `app/agents/review.py` — replaced LLM-generated markdown report with a deterministic Python builder; LLM was unreliable at populating markdown tables (hallucinated rows, truncated content). The `review_notes` narrative (Call 1) is still LLM-generated and embedded as-is.
+- `app/agents/review.py` — All Action Plans section: each plan is now a `### Company` subsection with a Priority/Due/Owner/Action table and a separate Follow-up Template table (Subject + Opening rows); `follow_up_template` is split on `" | Opening:"` before inserting into table cells to prevent pipe characters from breaking the markdown renderer
+- `app/agents/review.py` — `__main__` smoke test simplified to print the full markdown report inside a Rich `Panel` (matching `action.py` style) followed by the trace line
+- `app/workflows/revops_workflow.py` — `_save_log()` now includes `action_plans` in the JSON log: per-plan fields (`lead_id`, `company`, `contact`, `deal_value_usd`, `deal_stage`, `priority_score`, `category`, `score_reasoning`, `next_actions`, `follow_up_template`, `planned_at`)
+
+### Fixed
+- `app/agents/review.py` — Top Priority Leads table was showing empty rows because `follow_up_template` pipes broke the markdown table parser; fixed by building the table deterministically in Python
+
 ## [2026-03-17] — Final deliverables (tests, README, example output)
 
 ### Added
