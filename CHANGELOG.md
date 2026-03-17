@@ -1,3 +1,13 @@
+## [2026-03-16] — Action Agent (stage 3 of pipeline)
+
+### Added
+- `app/agents/action.py` — full implementation of the Action Agent: `_get_strategy_context` (category-specific strategy strings injected into LLM prompt), `_build_action_prompt` (messages builder with per-category guidance and retry context), `_call_llm_for_action` (LiteLLM call at temperature=0.3, max_tokens=512), `_parse_next_actions` (raw dict → `NextAction` model list with enum validation), `_build_action_plan_single` (retry loop, raises `RuntimeError` on total failure — no fallback), `run_action_agent` (main entry point catching `RuntimeError` per lead), and a `__main__` Rich panel smoke test
+
+### Decisions
+- **`RuntimeError` on total failure, no fallback** — unlike the Classification Agent, the Action Agent has no meaningful deterministic fallback (a generated action plan without LLM output would be useless). Total failure is surfaced as a `RuntimeError` that `run_action_agent` catches per-lead, logs, and skips — keeping the workflow alive while flagging the loss in `trace.error_message`.
+- **`except (ValidationError, KeyError, ValueError, JSONDecodeError)` kept narrow in retry loop** — the Action Agent's LLM failures (auth errors, network) are not retryable in a meaningful way, so they propagate out of the loop and become the `RuntimeError`. This differs from the Classification Agent where all failures should retry to reach the safe fallback.
+- **`temperature=0.3` vs `0.1` for Classification** — action descriptions benefit from slight variation to avoid identical boilerplate across similar leads; classification scoring needs tighter determinism.
+
 ## [2026-03-16] — Classification Agent (stage 2 of pipeline)
 
 ### Added
