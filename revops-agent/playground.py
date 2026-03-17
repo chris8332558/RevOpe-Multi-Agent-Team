@@ -5,7 +5,7 @@ Setup:
     uv add "agno[os]"
 
 Run:
-    fastapi dev playground.py
+    uv run uvicorn playground:app --host 0.0.0.0 --port 8000 --reload
 
 Then:
     1. Open https://os.agno.com
@@ -13,13 +13,19 @@ Then:
     3. Enter http://localhost:8000
     4. Click "Connect"
 """
+from pathlib import Path
+
 from agno.os import AgentOS
 from agno.db.sqlite import SqliteDb
 
+from app.agents.intake import load_leads_from_file
 from app.workflows.revops_workflow import create_revops_workflow
 
-# Create the workflow
+# Create the workflow and pre-load sample leads into session_state
 workflow = create_revops_workflow()
+workflow.session_state = {
+    "raw_leads": load_leads_from_file(Path("data/sample_leads.json"))
+}
 
 # Create AgentOS with the workflow registered
 agent_os = AgentOS(
@@ -33,5 +39,5 @@ agent_os = AgentOS(
     tracing=True,
 )
 
-# FastAPI app — this is what `fastapi dev playground.py` picks up
+# Fastapi app 
 app = agent_os.get_app()

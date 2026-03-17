@@ -1,3 +1,8 @@
+## [2026-03-17] — Playground pre-loads sample data for Agent OS UI
+
+### Changed
+- `playground.py` — pre-loads `data/sample_leads.json` into `workflow.session_state` so the Agno OS UI can run the pipeline without manual data seeding; updated run command to `uv run uvicorn playground:app --host 0.0.0.0 --port 8000 --reload`
+
 ## [2026-03-17] — Workflow bugfixes (session_state nesting + intake crash)
 
 ### Fixed
