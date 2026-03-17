@@ -50,9 +50,9 @@
     "contact_email": "tbergstrom@halcyonretail.com",
     "deal_value_usd": 8200,
     "deal_stage": "prospecting",
-    "last_activity_date": "2026-01-10",
+    "last_activity_date": null,
     "days_in_current_stage": 65,
-    "notes": "Initial outreach was met with mild interest but no follow-up engagement since January."
+    "notes": "Initial outreach was met with mild interest; last contact date was lost during CRM migration."
   },
   {
     "id": "lead_006",
@@ -61,7 +61,6 @@
     "contact_email": "jrhee@vantagepointsol.com",
     "deal_value_usd": 52000,
     "deal_stage": "qualification",
-    "last_activity_date": null,
     "days_in_current_stage": 7,
     "notes": "Imported from legacy CRM migration; last activity date missing from source record."
   }
