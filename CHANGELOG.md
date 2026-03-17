@@ -1,3 +1,14 @@
+## [2026-03-17] — Final deliverables (tests, README, example output)
+
+### Added
+- `tests/test_workflow.py` — 28 unit tests across 5 test classes (schemas, intake, classification scoring, review health summary, workflow helpers) plus 1 integration smoke test marked `@pytest.mark.integration`; all 28 unit tests pass with no LLM required (`pytest -m "not integration"`)
+- `data/example_output.md` — representative example run output for all 5 valid sample leads: observability table, pipeline health score, top priority leads table, QA review notes, and all action plans with due dates and owner roles
+- `README.md` — full project README: agent architecture diagram, per-agent descriptions, setup/run instructions, honest AI-assisted coding reflection (13 bullet points), and tradeoffs/limitations
+
+### Decisions
+- **`_normalize_raw` strips all strings** — the spec fixture comment suggested whitespace is preserved, but the actual implementation strips all string values. Test was written to match the real code behaviour (`"  Acme Corp  "` → `"Acme Corp"`).
+- **`@pytest.mark.integration` warning** — pytest emits `PytestUnknownMarkWarning` because the mark is not registered in `pyproject.toml`. Tests still run correctly; registering the mark in `pyproject.toml` would suppress the warning if desired.
+
 ## [2026-03-17] — Playground pre-loads sample data for Agent OS UI
 
 ### Changed
