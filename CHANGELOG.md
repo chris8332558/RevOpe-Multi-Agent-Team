@@ -1,3 +1,16 @@
+## [2026-03-17] — Workflow bugfixes (session_state nesting + intake crash)
+
+### Fixed
+- `app/workflows/revops_workflow.py` — `_get_sd()` now returns `session_data["session_state"]` instead of `session_data` directly; agno 2.5.9 nests `workflow.session_state` one level deeper, so step functions were reading an empty dict and producing 0 valid leads
+- `app/workflows/revops_workflow.py` — `intake_step_fn` no longer pre-parses all leads through `RawLead.model_validate` in a list comprehension; a single invalid lead (lead_006, missing `last_activity_date` key) crashed the entire step. Raw dicts are now passed directly to `run_intake_agent()` which already handles per-lead `ValidationError` gracefully
+- `app/workflows/revops_workflow.py` — fixed `NameError: 'parsed_leads' is not defined` in the `StepOutput` content string after removing the pre-parse step; replaced with `len(raw_data)`
+
+### Added
+- `sqlalchemy`, `aiosqlite` dependencies — required by `agno.db.sqlite.SqliteDb` used in `playground.py`
+
+### Changed
+- `playground.py` — replaced removed `agno.playground.Playground` with `agno.os.AgentOS` (agno 2.5.9 API)
+
 ## [2026-03-17] — Demo entry points (CLI + Agent OS UI)
 
 ### Added

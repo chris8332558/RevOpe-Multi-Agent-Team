@@ -43,7 +43,12 @@ LOGS_DIR = Path("outputs")
 # These two helpers centralise access so step functions stay clean.
 
 def _get_sd(step_input: StepInput) -> dict[str, Any]:
-    """Return the mutable session_data dict, initialising it if needed."""
+    """Return the mutable session_state dict, initialising it if needed.
+
+    In agno 2.5.9, workflow.session_state is stored at:
+        session.session_data["session_state"]
+    so we return that nested dict (not session_data itself).
+    """
     ws = getattr(step_input, "workflow_session", None)
     if ws is None:
         # Fallback: use additional_data as a state carrier
@@ -52,7 +57,9 @@ def _get_sd(step_input: StepInput) -> dict[str, Any]:
         return step_input.additional_data
     if ws.session_data is None:
         ws.session_data = {}
-    return ws.session_data
+    if "session_state" not in ws.session_data:
+        ws.session_data["session_state"] = {}
+    return ws.session_data["session_state"]
 
 
 def _set_sd(step_input: StepInput, key: str, value: Any) -> None:
@@ -147,14 +154,21 @@ def intake_step_fn(step_input: StepInput) -> StepOutput:
         sd = _get_sd(step_input)
         raw_data = sd.get("raw_leads", [])
 
-        parseable   = [r for r in raw_data if _is_parseable(r)]
-        parsed_leads = [RawLead.model_validate(r) for r in parseable]
+        # run_intake_agent handles per-lead validation internally
+        # (catches ValidationError per lead, skips bad ones)
+        validated, trace = run_intake_agent(raw_data)
 
-        state = WorkflowState(raw_leads=parsed_leads)
-
-        validated, trace = run_intake_agent(
-            [r.model_dump() for r in parsed_leads]
-        )
+        # Build WorkflowState from successfully validated leads
+        raw_leads = [
+            RawLead(
+                id=v.id, company=v.company, contact_name=v.contact_name,
+                contact_email=v.contact_email, deal_value_usd=v.deal_value_usd,
+                deal_stage=v.deal_stage, last_activity_date=v.last_activity_date,
+                days_in_current_stage=v.days_in_current_stage, notes=v.notes,
+            )
+            for v in validated
+        ]
+        state = WorkflowState(raw_leads=raw_leads)
         state.validated_leads = validated
         state.add_trace(trace)
 
@@ -164,7 +178,7 @@ def intake_step_fn(step_input: StepInput) -> StepOutput:
             content=(
                 f"Intake complete — "
                 f"{len(validated)} valid, "
-                f"{len(parsed_leads) - len(validated)} skipped | "
+                f"{len(raw_data) - len(validated)} skipped | "
                 f"latency: {trace.latency_ms:.0f}ms"
             )
         )
